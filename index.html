@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Merger Control Reviews Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 40px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .timestamp {
+      margin-top: 10px;
+      text-align: right;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Merger Control Reviews Dashboard</h1>
+  <div class="timestamp" id="last-updated">Last updated: --</div>
+
+  <input type="text" id="searchInput" placeholder="Search by case name or jurisdiction..."/>
+
+  <table id="merger-table">
+    <thead>
+      <tr>
+        <th>Case Name</th>
+        <th>Jurisdiction</th>
+        <th>Status</th>
+        <th>Commencement Date</th>
+        <th>Link</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="5">Loading data...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    const API_URL = "https://merger-dashboard-backend.onrender.com/mergers"; // ✅ Update this if needed
+
+    async function fetchData() {
+      const tableBody = document.querySelector('#merger-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="5">Loading data...</td></tr>';
+
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        renderTable(data);
+
+        const now = new Date();
+        document.getElementById('last-updated').textContent = 'Last updated: ' + now.toLocaleString();
+
+        // Search filter
+        document.getElementById('searchInput').addEventListener('input', function() {
+          const searchTerm = this.value.toLowerCase();
+          const filteredData = data.filter(item =>
+            item.caseName.toLowerCase().includes(searchTerm) ||
+            item.jurisdiction.toLowerCase().includes(searchTerm)
+          );
+          renderTable(filteredData);
+        });
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        tableBody.innerHTML = '<tr><td colspan="5">Error loading data.</td></tr>';
+      }
+    }
+
+    function renderTable(data) {
+      const tableBody = document.querySelector('#merger-table tbody');
+      if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5">No cases found.</td></tr>';
+        return;
+      }
+
+      tableBody.innerHTML = '';
+      data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.caseName}</td>
+          <td>${item.jurisdiction}</td>
+          <td>${item.status}</td>
+          <td>${item.date}</td>
+          <td><a href="${item.link}" target="_blank">View Case</a></td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Initial load
+    fetchData();
+
+    // Refresh every hour
+    setInterval(fetchData, 60 * 60 * 1000);
+  </script>
+
+</body>
+</html>
